@@ -1,1 +1,37 @@
+RECOMMENDATION SYSTEM
 
+
+
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.model_selection import train_test_split
+
+data = {
+    'user_id': [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4],
+    'movie_id': [101, 102, 103, 101, 104, 105, 102, 104, 105, 101, 102, 103],
+    'rating': [5, 3, 4, 4, 2, 3, 5, 4, 3, 3, 5, 4]
+}
+
+df = pd.DataFrame(data)
+
+user_movie_matrix = df.pivot_table(index='user_id', columns='movie_id', values='rating')
+user_movie_matrix = user_movie_matrix.fillna(0)  
+
+movie_similarity = cosine_similarity(user_movie_matrix.T)
+movie_similarity_df = pd.DataFrame(movie_similarity, index=user_movie_matrix.columns, columns=user_movie_matrix.columns)
+
+def recommend_movies(user_id, user_movie_matrix, movie_similarity_df, num_recommendations=5):
+
+    user_ratings = user_movie_matrix.loc[user_id]
+    
+    movie_scores = movie_similarity_df.dot(user_ratings).div(movie_similarity_df.sum(axis=1))
+    
+    watched_movies = user_ratings[user_ratings > 0].index
+    recommendations = movie_scores.drop(watched_movies)
+    
+    top_recommendations = recommendations.nlargest(num_recommendations)
+    return top_recommendations
+
+recommended_movies = recommend_movies(3, user_movie_matrix, movie_similarity_df)
+print("Recommended movies for user 3:")
+print(recommended_movies)
